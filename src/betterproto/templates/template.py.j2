@@ -267,7 +267,7 @@ class {{ service.py_name }}Stub:
             {%- if method.py_input_message -%}, {{ method.py_input_message_param }}: "{{ method.py_input_message_type }}"{%- endif -%}
         {%- else -%}
             {# Client streaming: need a request iterator instead #}
-            , {{ method.py_input_message_param }}_iterator: Iterable["{{ method.py_input_message_type }}]"
+            , {{ method.py_input_message_param }}_iterator: Iterable["{{ method.py_input_message_type }}"]
         {%- endif -%}
             ) -> {% if method.server_streaming %}Iterator["{{ method.py_output_message_type }}"]{% else %}"{{ method.py_output_message_type }}"{% endif %}:
         {% if method.comment %}
