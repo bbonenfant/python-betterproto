@@ -33,6 +33,7 @@ def outputfile_compiler(output_file: OutputTemplate) -> str:
     )
     template = env.get_template("template.py.j2")
 
+
     code = template.render(output_file=output_file)
     code = isort.api.sort_code_string(
         code=code,

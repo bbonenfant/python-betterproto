@@ -15,20 +15,29 @@ from typing import {% for i in output_file.typing_imports|sort %}{{ i }}{% if no
 {% endif %}
 
 import betterproto
+{% if output_file.parent_request.options.grpc_kind == "grpclib" %}
 from betterproto.grpc.grpclib_server import ServiceBase
+{% endif %}
 {% for i in output_file.imports|sort %}
 {{ i }}
 {% endfor %}
-{% if output_file.services %}
+{% if output_file.services and output_file.parent_request.options.grpc_kind == "grpclib" %}
 import grpclib
 {% endif %}
+{% if output_file.services and output_file.parent_request.options.grpc_kind == "grpcio" %}
+import grpc
+from betterproto.grpc.grpcio_server import ServicerBase
+{% endif %}
 
-{% if output_file.imports_type_checking_only %}
+{% if output_file.imports_type_checking_only or output_file.parent_request.options.grpc_kind == "grpcio" %}
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 {% for i in output_file.imports_type_checking_only|sort %}    {{ i }}
 {% endfor %}
+{% if output_file.parent_request.options.grpc_kind == "grpcio" %}
+    import grpc
+{% endif %}
 {% endif %}
 
 {% if output_file.enums %}{% for enum in output_file.enums %}
@@ -80,6 +89,9 @@ class {{ message.py_name }}(betterproto.Message):
 
 
 {% endfor %}
+
+{% if output_file.parent_request.options.grpc_kind == "grpclib" %}
+
 {% for service in output_file.services %}
 class {{ service.py_name }}Stub(betterproto.ServiceStub):
     {% if service.comment %}
@@ -219,3 +231,119 @@ class {{ service.py_name }}Base(ServiceBase):
         }
 
 {% endfor %}
+{% endif %}
+
+{% if output_file.parent_request.options.grpc_kind == "grpcio" %}
+{% for service in output_file.services %}
+class {{ service.py_name }}Stub:
+    {% if service.comment %}
+{{ service.comment }}
+
+    {% endif %}
+
+    def __init__(self, channel: "grpc.Channel"):
+        {% if not service.methods %}
+        pass
+        {% endif %}
+        {% for method in service.methods %}
+            {% if method.server_streaming and method.client_streaming %}
+            self.__rpc_{{ method.py_name }} = channel.stream_stream(
+            {% elif method.server_streaming and not method.client_streaming %}
+            self.__rpc_{{ method.py_name }} = channel._unary_stream(
+            {% elif not method.server_streaming and method.client_streaming %}
+            self.__rpc_{{ method.py_name }} = channel._stream_unary(
+            {% else %}
+            self.__rpc_{{ method.py_name }} = channel._unary_unary(
+            {% endif %}
+                "{{ method.route }}",
+                request_deserializer={{ method.py_output_message_type }}.FromString,
+                response_serializer={{ method.py_input_message_type }}.SerializeToString,
+            )
+        {% endfor %}
+
+    {% for method in service.methods %}
+    def {{ method.py_name }}(self
+        {%- if not method.client_streaming -%}
+            {%- if method.py_input_message -%}, {{ method.py_input_message_param }}: "{{ method.py_input_message_type }}"{%- endif -%}
+        {%- else -%}
+            {# Client streaming: need a request iterator instead #}
+            , {{ method.py_input_message_param }}_iterator: Iterable["{{ method.py_input_message_type }}"
+        {%- endif -%}
+            ) -> {% if method.server_streaming %}Iterator["{{ method.py_output_message_type }}"]{% else %}"{{ method.py_output_message_type }}"{% endif %}:
+        {% if method.comment %}
+{{ method.comment }}
+
+        {% endif %}
+        {% if method.server_streaming %}
+        for response in self.__rpc_{{ method.py_name }}(
+            {% if method.client_streaming %}
+            {{ method.py_input_message_param }}_iterator
+            {% else %}
+            {{ method.py_input_message_param }}
+            {% endif %}
+        ):
+            yield response
+        {% else %}
+        return self.__rpc_{{ method.py_name }}(
+            {% if method.client_streaming %}
+            {{ method.py_input_message_param }}_iterator
+            {% else %}
+            {{ method.py_input_message_param }}
+            {% endif %}
+        )
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
+{% for service in output_file.services %}
+class {{ service.py_name }}Base(ServicerBase):
+    {% if service.comment %}
+{{ service.comment }}
+
+    {% endif %}
+
+    {% for method in service.methods %}
+    def {{ method.py_name }}(self
+        {%- if not method.client_streaming -%}
+            , request: "{{ method.py_input_message_type }}"
+        {%- else -%}
+            {# Client streaming: need a request iterator instead #}
+            , request_iterator: Iterator["{{ method.py_input_message_type }}"]
+        {%- endif -%}
+            , context: "grpc.ServicerContext"
+            ) -> {% if method.server_streaming %}Iterator["{{ method.py_output_message_type }}"]{% else %}"{{ method.py_output_message_type }}"{% endif %}:
+        {% if method.comment %}
+{{ method.comment }}
+
+        {% endif %}
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    {% endfor %}
+
+    __proto_path__ = "{{ service.proto_path }}"
+
+    @property
+    def __rpc_methods__(self):
+        return {
+        {% for method in service.methods %}
+            "{{ method.proto_name }}":
+            {% if not method.client_streaming and not method.server_streaming %}
+                grpc.unary_unary_rpc_method_handler(
+            {% elif method.client_streaming and method.server_streaming %}
+                grpc.stream_stream_rpc_method_handler(
+            {% elif method.client_streaming %}
+                grpc.stream_unary_rpc_method_handler(
+            {% else %}
+                grpc.unary_stream_rpc_method_handler(
+            {% endif %}
+                    self.{{ method.py_name }},
+                    request_deserializer={{ method.py_input_message_type }}.FromString,
+                    response_serializer={{ method.py_input_message_type }}.SerializeToString,
+                ),
+        {% endfor %}
+        }
+
+{% endfor %}
+{% endif %}

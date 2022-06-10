@@ -211,11 +211,18 @@ class ProtoContentBase:
             proto_file=self.source_file, path=self.path, indent=self.comment_indent
         )
 
+@dataclass
+class Options:
+    grpc_kind: str = "grpclib"
+    include_google: bool = False
+
+
 
 @dataclass
 class PluginRequestCompiler:
 
     plugin_request_obj: CodeGeneratorRequest
+    options: Options
     output_packages: Dict[str, "OutputTemplate"] = field(default_factory=dict)
 
     @property
@@ -672,6 +679,10 @@ class ServiceCompiler(ProtoContentBase):
         return self.proto_obj.name
 
     @property
+    def proto_path(self) -> str:
+        return self.parent.package + "." + self.proto_name
+
+    @property
     def py_name(self) -> str:
         return pythonize_class_name(self.proto_name)
 
@@ -701,6 +712,7 @@ class ServiceMethodCompiler(ProtoContentBase):
         # Required by both client and server
         if self.client_streaming or self.server_streaming:
             self.output_file.typing_imports.add("AsyncIterator")
+            self.output_file.typing_imports.add("Iterator")
 
         # add imports required for request arguments timeout, deadline and metadata
         self.output_file.typing_imports.add("Optional")
