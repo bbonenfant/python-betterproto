@@ -249,15 +249,15 @@ class {{ service.py_name }}Stub:
             {% if method.server_streaming and method.client_streaming %}
             self.__rpc_{{ method.py_name }} = channel.stream_stream(
             {% elif method.server_streaming and not method.client_streaming %}
-            self.__rpc_{{ method.py_name }} = channel._unary_stream(
+            self.__rpc_{{ method.py_name }} = channel.unary_stream(
             {% elif not method.server_streaming and method.client_streaming %}
-            self.__rpc_{{ method.py_name }} = channel._stream_unary(
+            self.__rpc_{{ method.py_name }} = channel.stream_unary(
             {% else %}
-            self.__rpc_{{ method.py_name }} = channel._unary_unary(
+            self.__rpc_{{ method.py_name }} = channel.unary_unary(
             {% endif %}
                 "{{ method.route }}",
-                request_deserializer={{ method.py_output_message_type }}.FromString,
-                response_serializer={{ method.py_input_message_type }}.SerializeToString,
+                request_serializer={{ method.py_input_message_type }}.SerializeToString,
+                response_deserializer={{ method.py_output_message_type }}.FromString,
             )
         {% endfor %}
 
