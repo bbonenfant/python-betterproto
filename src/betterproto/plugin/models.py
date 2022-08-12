@@ -259,6 +259,7 @@ class OutputTemplate:
     enums: List["EnumDefinitionCompiler"] = field(default_factory=list)
     services: List["ServiceCompiler"] = field(default_factory=list)
     imports_type_checking_only: Set[str] = field(default_factory=set)
+    output = True
 
     @property
     def package(self) -> str:
@@ -780,6 +781,7 @@ class ServiceMethodCompiler(ProtoContentBase):
             package=self.output_file.package,
             imports=self.output_file.imports,
             source_type=self.proto_obj.input_type,
+            unwrap=True
         ).strip('"')
 
     @property
