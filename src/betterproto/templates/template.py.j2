@@ -15,6 +15,7 @@ from typing import {% for i in output_file.typing_imports|sort %}{{ i }}{% if no
 {% endif %}
 
 import betterproto
+import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf
 {% if output_file.parent_request.options.grpc_kind == "grpclib" %}
 from betterproto.grpc.grpclib_server import ServiceBase
 {% endif %}
