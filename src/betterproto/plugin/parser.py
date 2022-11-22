@@ -129,6 +129,8 @@ def generate_code(request: CodeGeneratorRequest) -> CodeGeneratorResponse:
     # Generate output files
     output_paths: Set[pathlib.Path] = set()
     for output_package_name, output_package in request_data.output_packages.items():
+        if not output_package.output:
+            continue
 
         # Add files to the response object
         output_path = pathlib.Path(*output_package_name.split("."), "__init__.py")

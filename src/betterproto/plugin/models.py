@@ -259,7 +259,7 @@ class OutputTemplate:
     enums: List["EnumDefinitionCompiler"] = field(default_factory=list)
     services: List["ServiceCompiler"] = field(default_factory=list)
     imports_type_checking_only: Set[str] = field(default_factory=set)
-    output = True
+    output: bool = True
 
     @property
     def package(self) -> str:
@@ -717,6 +717,7 @@ class ServiceMethodCompiler(ProtoContentBase):
 
         # add imports required for request arguments timeout, deadline and metadata
         self.output_file.typing_imports.add("Optional")
+        self.output_file.imports_type_checking_only.add("import grpclib.server")
         self.output_file.imports_type_checking_only.add(
             "from betterproto.grpc.grpclib_client import MetadataLike"
         )
@@ -781,7 +782,7 @@ class ServiceMethodCompiler(ProtoContentBase):
             package=self.output_file.package,
             imports=self.output_file.imports,
             source_type=self.proto_obj.input_type,
-            unwrap=True
+            unwrap=False,  # TODO: was True
         ).strip('"')
 
     @property

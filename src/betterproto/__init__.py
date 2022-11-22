@@ -379,15 +379,10 @@ def _preprocess_single(proto_type: str, wraps: str, value: Any) -> bytes:
     elif proto_type == TYPE_MESSAGE:
         if isinstance(value, datetime):
             # Convert the `datetime` to a timestamp message.
-            seconds = int(value.timestamp())
-            nanos = int(value.microsecond * 1e3)
-            value = _Timestamp(seconds=seconds, nanos=nanos)
+            value = _Timestamp.from_datetime(value)
         elif isinstance(value, timedelta):
             # Convert the `timedelta` to a duration message.
-            total_ms = value // timedelta(microseconds=1)
-            seconds = int(total_ms / 1e6)
-            nanos = int((total_ms % 1e6) * 1e3)
-            value = _Duration(seconds=seconds, nanos=nanos)
+            value = _Duration.from_timedelta(value)
         elif wraps:
             if value is None:
                 return b""
@@ -811,6 +806,7 @@ class Message(ABC):
                                 meta.proto_type,
                                 item,
                                 wraps=meta.wraps or "",
+                                serialize_empty=True,
                             )
                             # if it's an empty message it still needs to be represented
                             # as an item in the repeated list
@@ -1265,7 +1261,12 @@ class Message(ABC):
                     setattr(self, field_name, v)
         return self
 
-    def to_json(self, indent: Union[None, int, str] = None) -> str:
+    def to_json(
+        self,
+        indent: Union[None, int, str] = None,
+        include_default_values: bool = False,
+        casing: Casing = Casing.CAMEL,
+    ) -> str:
         """A helper function to parse the message instance into its JSON
         representation.
 
@@ -1278,12 +1279,24 @@ class Message(ABC):
         indent: Optional[Union[:class:`int`, :class:`str`]]
             The indent to pass to :func:`json.dumps`.
 
+        include_default_values: :class:`bool`
+            If ``True`` will include the default values of fields. Default is ``False``.
+            E.g. an ``int32`` field will be included with a value of ``0`` if this is
+            set to ``True``, otherwise this would be ignored.
+
+        casing: :class:`Casing`
+            The casing to use for key values. Default is :attr:`Casing.CAMEL` for
+            compatibility purposes.
+
         Returns
         --------
         :class:`str`
             The JSON representation of the message.
         """
-        return json.dumps(self.to_dict(), indent=indent)
+        return json.dumps(
+            self.to_dict(include_default_values=include_default_values, casing=casing),
+            indent=indent,
+        )
 
     def from_json(self: T, value: Union[str, bytes]) -> T:
         """A helper function to return the message instance from its JSON
@@ -1505,6 +1518,15 @@ from .lib.google.protobuf import (  # noqa
 
 
 class _Duration(Duration):
+    @classmethod
+    def from_timedelta(
+        cls, delta: timedelta, *, _1_microsecond: timedelta = timedelta(microseconds=1)
+    ) -> "_Duration":
+        total_ms = delta // _1_microsecond
+        seconds = int(total_ms / 1e6)
+        nanos = int((total_ms % 1e6) * 1e3)
+        return cls(seconds, nanos)
+
     def to_timedelta(self) -> timedelta:
         return timedelta(seconds=self.seconds, microseconds=self.nanos / 1e3)
 
@@ -1518,6 +1540,12 @@ class _Duration(Duration):
 
 
 class _Timestamp(Timestamp):
+    @classmethod
+    def from_datetime(cls, dt: datetime) -> "_Timestamp":
+        seconds = int(dt.timestamp())
+        nanos = int(dt.microsecond * 1e3)
+        return cls(seconds, nanos)
+
     def to_datetime(self) -> datetime:
         ts = self.seconds + (self.nanos / 1e9)
         return datetime.fromtimestamp(ts, tz=timezone.utc)
