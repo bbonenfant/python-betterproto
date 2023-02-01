@@ -69,8 +69,6 @@ def traverse(
 def parse_options(plugin_options: List[str]) -> Options:
     options = Options()
     for option in plugin_options:
-        if option.startswith("grpc="):
-            options.grpc_kind = option.split("=", 1)[1]
         if option == "INCLUDE_GOOGLE":
             options.include_google = True
     return options
