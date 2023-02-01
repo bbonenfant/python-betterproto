@@ -35,10 +35,11 @@ from betterproto.grpc.grpcio_server import ServicerBase
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-{% for i in output_file.imports_type_checking_only|sort %}    {{ i }}
-{% endfor %}
 {% if output_file.parent_request.options.grpc_kind == "grpcio" %}
     import grpc
+{% else %}
+{% for i in output_file.imports_type_checking_only|sort %}    {{ i }}
+{% endfor %}
 {% endif %}
 {% endif %}
 
