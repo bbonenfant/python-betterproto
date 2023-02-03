@@ -112,31 +112,61 @@ class {{ service.py_name }}Stub:
     {% for method in service.methods %}
     def {{ method.py_name }}(self
         {%- if not method.client_streaming -%}
-            {%- if method.py_input_message -%}, {{ method.py_input_message_param }}: "{{ method.py_input_message_type }}"{%- endif -%}
+            {%- if method.py_input_message and method.py_input_message.fields -%}, *,
+                {%- for field in method.py_input_message.fields -%}
+                    {{ field.py_name }}: {% if field.py_name in method.mutable_default_args and not field.annotation.startswith("Optional[") -%}
+                                            Optional[{{ field.annotation }}]
+                                         {%- else -%}
+                                            {{ field.annotation }}
+                                         {%- endif -%} =
+                                            {%- if field.py_name not in method.mutable_default_args -%}
+                                                {{ field.default_value_string }}
+                                            {%- else -%}
+                                                None
+                                            {% endif -%}
+                    {%- if not loop.last %}, {% endif -%}
+                {%- endfor -%}
+            {%- endif -%}
         {%- else -%}
             {# Client streaming: need a request iterator instead #}
-            , {{ method.py_input_message_param }}_iterator: Iterable["{{ method.py_input_message_type }}"]
+            , request_iterator: Union[AsyncIterable["{{ method.py_input_message_type }}"], Iterable["{{ method.py_input_message_type }}"]]
         {%- endif -%}
             ) -> {% if method.server_streaming %}Iterator["{{ method.py_output_message_type }}"]{% else %}"{{ method.py_output_message_type }}"{% endif %}:
         {% if method.comment %}
 {{ method.comment }}
 
         {% endif %}
+        {%- for py_name, zero in method.mutable_default_args.items() %}
+        {{ py_name }} = {{ py_name }} or {{ zero }}
+        {% endfor %}
+
+        {% if not method.client_streaming %}
+        request = {{ method.py_input_message_type }}()
+        {% for field in method.py_input_message.fields %}
+            {% if field.field_type == 'message' %}
+        if {{ field.py_name }} is not None:
+            request.{{ field.py_name }} = {{ field.py_name }}
+            {% else %}
+        request.{{ field.py_name }} = {{ field.py_name }}
+            {% endif %}
+        {% endfor %}
+        {% endif %}
+
         {% if method.server_streaming %}
         for response in self.__rpc_{{ method.py_name }}(
             {% if method.client_streaming %}
-            {{ method.py_input_message_param }}_iterator
+            request_iterator
             {% else %}
-            {{ method.py_input_message_param }}
+            request
             {% endif %}
         ):
             yield response
         {% else %}
         return self.__rpc_{{ method.py_name }}(
             {% if method.client_streaming %}
-            {{ method.py_input_message_param }}_iterator
+            request_iterator
             {% else %}
-            {{ method.py_input_message_param }}
+            request
             {% endif %}
         )
         {% endif %}
@@ -153,7 +183,16 @@ class {{ service.py_name }}Base(ServicerBase):
     {% for method in service.methods %}
     def {{ method.py_name }}(self
         {%- if not method.client_streaming -%}
-            , request: "{{ method.py_input_message_type }}"
+            {%- if method.py_input_message and method.py_input_message.fields -%},
+                {%- for field in method.py_input_message.fields -%}
+                    {{ field.py_name }}: {% if field.py_name in method.mutable_default_args and not field.annotation.startswith("Optional[") -%}
+                                            Optional[{{ field.annotation }}]
+                                         {%- else -%}
+                                            {{ field.annotation }}
+                                         {%- endif -%}
+                    {%- if not loop.last %}, {% endif -%}
+                {%- endfor -%}
+            {%- endif -%}
         {%- else -%}
             {# Client streaming: need a request iterator instead #}
             , request_iterator: Iterator["{{ method.py_input_message_type }}"]
