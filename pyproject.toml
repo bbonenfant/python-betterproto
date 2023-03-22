@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "betterproto"
-version = "2.0.0b5"
+version = "2.0.0b5+pachv1.0.0"
 description = "A better Protobuf / gRPC generator & library"
 authors = ["Daniel G. Taylor <danielgtaylor@gmail.com>"]
 readme = "README.md"
@@ -44,7 +44,6 @@ protoc-gen-python_betterproto = "betterproto.plugin:main"
 
 [tool.poetry.extras]
 compiler = ["black", "isort", "jinja2"]
-grpcio = ["grpcio"]
 
 
 # Dev workflow tasks

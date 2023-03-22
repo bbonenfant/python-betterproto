@@ -211,18 +211,11 @@ class ProtoContentBase:
             proto_file=self.source_file, path=self.path, indent=self.comment_indent
         )
 
-@dataclass
-class Options:
-    grpc_kind: str = "grpclib"
-    include_google: bool = False
-
-
 
 @dataclass
 class PluginRequestCompiler:
 
     plugin_request_obj: CodeGeneratorRequest
-    options: Options
     output_packages: Dict[str, "OutputTemplate"] = field(default_factory=dict)
 
     @property
@@ -811,7 +804,7 @@ class ServiceMethodCompiler(ProtoContentBase):
             package=self.output_file.package,
             imports=self.output_file.imports,
             source_type=self.proto_obj.input_type,
-            unwrap=False,  # TODO: was True
+            unwrap=False,
         ).strip('"')
 
     @property
