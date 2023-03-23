@@ -22,7 +22,6 @@ import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf
 {% endfor %}
 {% if output_file.services%}
 import grpc
-from betterproto.grpc.grpcio_server import ServicerBase
 {% endif %}
 
 from typing import TYPE_CHECKING
@@ -174,7 +173,7 @@ class {{ service.py_name }}Stub:
 {% endfor %}
 
 {% for service in output_file.services %}
-class {{ service.py_name }}Base(ServicerBase):
+class {{ service.py_name }}Base:
     {% if service.comment %}
 {{ service.comment }}
 

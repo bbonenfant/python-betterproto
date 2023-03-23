@@ -1,3 +1,4 @@
+# TODO: This file isn't necessary for clients, might be necessary for servers.
 from typing import Dict, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
