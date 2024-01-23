@@ -1738,8 +1738,4 @@ compiler = ["black", "isort", "jinja2"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7"
-<<<<<<< HEAD
-content-hash = "0488b47b6a41a97bc705af3ede6936742e75568f4ecd3afa46700c49fdba9c4b"
-=======
-content-hash = "951935cf142ebc69a7947c2c23dee983bf21c9ab3512ffafb1868cf7e456872d"
->>>>>>> b632d98 (Upgrade `grpcio-tools` and `protobuf` (#498))
+content-hash = "f4805c69b02ace9a2e4a0d14f45f5317c86d81d895e83f9098c25a5df1a894f9"
