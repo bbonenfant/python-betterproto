@@ -15,9 +15,16 @@ Go through all the commit for which we are "behind" and cherry-pick the necessar
 git cherry-pick <commit-sha>
 ```
 
-We only need changes to the `compiler` porition of the codebase.
+We only need changes to the `compiler` portion of the codebase.
 You should be looking out for changes under 
   `betterproto/compile` and `betterproto/plugin`.
 
-The final "test" is to rebuild the package and publish a GitHub release, then update the
+To "test" the changes, push your branch to GitHub and update the
 dependency here: https://github.com/pachyderm/pachyderm/blob/master/python-sdk/proto/Dockerfile.
+You can use the following format for testing:
+```
+RUN python3 -m pip install 'betterproto[compiler] @ git+https://github.com/pachyderm/python-betterproto.git@<branch-name>
+```
+
+Once merged, you need to rebuild the package and publish as a GitHub release.
+Then update the version of the dependency in the Dockerfile specified above.
