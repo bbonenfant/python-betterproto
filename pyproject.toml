@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "betterproto"
-version = "2.0.0b5+pachv1.0.2"
+version = "2.0.0b6+pachv1.0.3"
 description = "A better Protobuf / gRPC generator & library"
 authors = ["Daniel G. Taylor <danielgtaylor@gmail.com>"]
 readme = "README.md"
@@ -12,10 +12,11 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.6.2,<4.0"
-black = { version = ">=19.3b0", optional = true }
+python = "^3.7"
+black = { version = ">=23.1.0", optional = true }
 dataclasses = { version = "^0.7", python = ">=3.6, <3.7" }
 grpcio = "^1.43.0"
+importlib-metadata = { version = ">=1.6.0", python = "<3.8" }
 jinja2 = { version = ">=3.0.3", optional = true }
 python-dateutil = "^2.8"
 isort = {version = "^5.10.1", optional = true}
@@ -23,11 +24,11 @@ isort = {version = "^5.10.1", optional = true}
 [tool.poetry.dev-dependencies]
 asv = "^0.4.2"
 bpython = "^0.19"
-grpcio-tools = "^1.40.0"
+grpcio-tools = "^1.54.2"
 jinja2 = ">=3.0.3"
 mypy = "^0.930"
 poethepoet = ">=0.9.0"
-protobuf = "^3.12.2"
+protobuf = "^4.21.6"
 pytest = "^6.2.5"
 pytest-asyncio = "^0.12.0"
 pytest-cov = "^2.9.0"
@@ -61,7 +62,7 @@ cmd  = "mypy src --ignore-missing-imports"
 help = "Check types with mypy"
 
 [tool.poe.tasks.format]
-cmd  = "black . --exclude tests/output_"
+cmd  = "black . --exclude tests/output_ --target-version py310"
 help = "Apply black formatting to source code"
 
 [tool.poe.tasks.docs]
@@ -112,7 +113,7 @@ force_grid_wrap = 2
 src_paths = ["src", "tests"]
 
 [tool.black]
-target-version = ['py36']
+target-version = ['py37']
 
 [tool.doc8]
 paths = ["docs"]
@@ -130,7 +131,7 @@ omit = ["betterproto/tests/*"]
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-envlist = py36, py37, py38, py310
+envlist = py37, py38, py310
 
 [testenv]
 whitelist_externals = poetry
